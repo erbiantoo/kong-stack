@@ -56,11 +56,34 @@ services:
       - "${KONG_ADMIN_API_SSL_PORT}:8444"
       - "${KONG_ADMIN_GUI_PORT}:8002"
 
+  # =========================
+  # KONGA PREPARE (ONE-TIME)
+  # =========================
+  konga-prepare:
+    image: pantsel/konga:0.14.9
+    container_name: konga-prepare
+    depends_on:
+      - postgres
+    environment:
+      NODE_ENV: ${NODE_ENV}
+      DB_ADAPTER: postgres
+      DB_HOST: postgres
+      DB_PORT: ${POSTGRES_PORT}
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_DATABASE: ${POSTGRES_DB}
+    command: node ./bin/konga.js prepare
+    restart: "no"
+
+  # =========================
+  # KONGA APP
+  # =========================
   konga:
     image: pantsel/konga:0.14.9
     container_name: konga
     depends_on:
       - kong
+      - konga-prepare
     restart: always
     environment:
       NODE_ENV: ${NODE_ENV}
@@ -73,9 +96,7 @@ services:
       KONGA_HOOK_TIMEOUT: 120000
     ports:
       - "${KONGA_PORT}:1337"
-    command: >
-      sh -c "node ./bin/konga.js prepare &&
-             node ./bin/konga.js start"
+    command: node ./bin/konga.js start
 
 volumes:
   kong-db-data:
