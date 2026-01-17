@@ -28,7 +28,7 @@ services:
   # Kong components (Kong & PostgreSQL Database) #
   ################################################
   kong-migrations:
-    image: kong:3.5
+    image: "${KONG_DOCKER_TAG:-kong:latest}"
     command: kong migrations bootstrap
     environment:
       <<: *kong-env
@@ -39,7 +39,7 @@ services:
       - kong-database
 
   kong-migrations-up:
-    image: kong:3.5
+    image: "${KONG_DOCKER_TAG:-kong:latest}"
     command: kong migrations up && kong migrations finish
     environment:
       <<: *kong-env
@@ -50,7 +50,7 @@ services:
       - kong-database
 
   kong:
-    image: kong:3.5
+    image: "${KONG_DOCKER_TAG:-kong:latest}"
     user: "${KONG_USER:-kong}"
     environment:
       <<: *kong-env
@@ -67,7 +67,6 @@ services:
       - kong-net
     ports:
       - "${KONG_INBOUND_PROXY_LISTEN:-0.0.0.0}:8000:8000/tcp"
-      - "${KONG_INBOUND_SSL_PROXY_LISTEN:-0.0.0.0}:8443:8443/tcp"
       - "127.0.0.1:8001:8001/tcp"
       - "127.0.0.1:8444:8444/tcp"
       - "127.0.0.1:8002:8002/tcp"
