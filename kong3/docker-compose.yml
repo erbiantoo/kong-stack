@@ -56,7 +56,7 @@ services:
       <<: *kong-env
       KONG_ADMIN_ACCESS_LOG: /dev/stdout
       KONG_ADMIN_ERROR_LOG: /dev/stderr
-      KONG_PROXY_LISTEN: "${KONG_PROXY_LISTEN:-0.0.0.0:8000"
+      KONG_PROXY_LISTEN: "${KONG_PROXY_LISTEN:-0.0.0.0:8000}"
       KONG_ADMIN_LISTEN: "${KONG_ADMIN_LISTEN:-0.0.0.0:8001}"
       KONG_ADMIN_GUI_LISTEN: "${KONG_ADMIN_GUI_LISTEN:-0.0.0.0:8002}"
       KONG_PROXY_ACCESS_LOG: /dev/stdout
@@ -143,15 +143,17 @@ services:
 
   konga-prepare:
     container_name: konga-prepare
-    image: pantsel/konga:0.14.9
+    image: pantsel/konga
     command: "-c prepare -a postgres -u postgresql://konga:mykongapassword@konga-database:5432/konga_db"
     networks:
       - kong-net
     restart: on-failure
+    depends_on:
+      - konga-database
   
   konga:
     container_name: konga
-    image: pantsel/konga:0.14.9
+    image: pantsel/konga
     restart: unless-stopped
     networks:
       - kong-net
