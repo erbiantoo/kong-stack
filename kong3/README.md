@@ -8,4 +8,6 @@ A script for simple install Kong API Gateway with Docker Compose.
   docker-compose up -d --build
   docker-compose down -v
   docker-compose ps
+  docker system prune -a --volumes u
 ```
+
