@@ -6,9 +6,6 @@ x-kong-config: &kong-env
   KONG_PG_PASSWORD: ${KONG_PG_PASSWORD:-mykongpassword}
 
 services:
-  ################################################
-  # Database: PostgreSQL 16
-  ################################################
   kong-database:
     image: postgres:16-alpine
     environment:
@@ -26,9 +23,7 @@ services:
       - kong_data:/var/lib/postgresql/data
     restart: unless-stopped
 
-  ################################################
-  # Migrations: Setup Database Schema
-  ################################################
+  # 1. Inisialisasi Database (Hanya jalan jika DB kosong)
   kong-migrations:
     image: kong:3.9
     command: kong migrations bootstrap
@@ -41,9 +36,20 @@ services:
         condition: service_healthy
     restart: on-failure
 
-  ################################################
-  # Kong Gateway
-  ################################################
+  # 2. Jalankan Migrasi Lanjutan (Penting untuk upgrade versi)
+  kong-migrations-up:
+    image: kong:3.9
+    command: kong migrations up && kong migrations finish
+    environment:
+      <<: *kong-env
+    networks:
+      - kong-net
+    depends_on:
+      kong-migrations:
+        condition: service_completed_successfully
+    restart: on-failure
+
+  # 3. Jalankan Kong Gateway
   kong:
     image: kong:3.9
     user: "${KONG_USER:-kong}"
@@ -60,10 +66,10 @@ services:
     networks:
       - kong-net
     ports:
-      - "8000:8000"     # Proxy HTTP
-      - "8443:8443"     # Proxy HTTPS
-      - "127.0.0.1:8001:8001" # Admin API (Lokal)
-      - "127.0.0.1:8002:8002" # Admin GUI (Lokal)
+      - "8000:8000"
+      - "8443:8443"
+      - "127.0.0.1:8001:8001"
+      - "127.0.0.1:8002:8002"
     healthcheck:
       test: ["CMD", "kong", "health"]
       interval: 10s
@@ -76,63 +82,49 @@ services:
     depends_on:
       kong-database:
         condition: service_healthy
-      kong-migrations:
+      kong-migrations-up:
         condition: service_completed_successfully
     restart: unless-stopped
 
-  #############################################
-  # Demo services
-  #############################################
+  # Demo services tetap sama seperti sebelumnya...
   alpha:
     image: timpamungkas/api-management-alpha:3.0.0
     container_name: alpha
     networks:
-      kong-net:
-        ipv4_address: 172.1.1.11
+      kong-net: { ipv4_address: 172.1.1.11 }
     depends_on:
-      kong:
-        condition: service_healthy
+      kong: { condition: service_healthy }
 
   beta:
     image: timpamungkas/api-management-beta:3.0.0
     container_name: beta
     networks:
-      kong-net:
-        ipv4_address: 172.1.1.12
+      kong-net: { ipv4_address: 172.1.1.12 }
     depends_on:
-      kong:
-        condition: service_healthy
+      kong: { condition: service_healthy }
 
   gamma:
     image: timpamungkas/api-management-gamma:3.0.0
     container_name: gamma
     networks:
-      kong-net:
-        ipv4_address: 172.1.1.13
+      kong-net: { ipv4_address: 172.1.1.13 }
     depends_on:
-      kong:
-        condition: service_healthy
+      kong: { condition: service_healthy }
 
   omega:
     image: timpamungkas/api-management-omega:3.0.0
     container_name: omega
     networks:
-      kong-net:
-        ipv4_address: 172.1.1.14
+      kong-net: { ipv4_address: 172.1.1.14 }
     depends_on:
-      kong:
-        condition: service_healthy
+      kong: { condition: service_healthy }
 
 volumes:
   kong_data:
   kong_prefix_vol:
-    driver_opts:
-      type: tmpfs
-      device: tmpfs
+    driver_opts: { type: tmpfs, device: tmpfs }
   kong_tmp_vol:
-    driver_opts:
-      type: tmpfs
-      device: tmpfs
+    driver_opts: { type: tmpfs, device: tmpfs }
 
 networks:
   kong-net:
