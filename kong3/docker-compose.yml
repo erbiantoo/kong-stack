@@ -37,6 +37,9 @@ services:
     restart: on-failure
     depends_on:
       - kong-database
+    deploy:
+      restart_policy:
+        condition: on-failure
 
   kong-migrations-up:
     image: "${KONG_DOCKER_TAG:-kong:latest}"
@@ -48,7 +51,10 @@ services:
     restart: on-failure
     depends_on:
       - kong-database
-
+    deploy:
+      restart_policy:
+        condition: on-failure
+        
   kong:
     image: "${KONG_DOCKER_TAG:-kong:latest}"
     user: "${KONG_USER:-kong}"
@@ -109,112 +115,3 @@ services:
       - kong-net
     volumes:
       - kong_data:/var/lib/postgresql/data
-
-  #############################################
-  # Konga Services
-  #############################################
-
-
-  konga-database:
-    image: postgres:11-alpine
-    environment:
-      POSTGRES_DB: konga_db
-      POSTGRES_USER: konga
-      POSTGRES_PASSWORD: mykongapassword
-    healthcheck:
-      test:
-        [
-          "CMD",
-          "pg_isready",
-          "-d",
-          "-konga",
-          "-U",
-          "-konga"
-        ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    restart: unless-stopped
-    stdin_open: true
-    tty: true
-    networks:
-      - kong-net
-
-  konga-prepare:
-    container_name: konga-prepare
-    image: pantsel/konga
-    command: "-c prepare -a postgres -u postgresql://konga:mykongapassword@konga-database:5432/konga_db"
-    networks:
-      - kong-net
-    restart: on-failure
-    depends_on:
-      - konga-database
-  
-  konga:
-    container_name: konga
-    image: pantsel/konga
-    restart: unless-stopped
-    networks:
-      - kong-net
-    environment:
-      DB_ADAPTER: postgres
-      DB_HOST: konga-database
-      DB_USER: konga
-      DB_PASSWORD: mykongapassword
-      DB_DATABASE: konga_db
-      # any string will OK for token
-      TOKEN_SECRET: iu7YDcPLiZkozQXzZ9kka3Ee1Vid5ZgQ
-      NODE_ENV: development
-    depends_on:
-      - konga-prepare
-    ports:
-      - "1337:1337"
-
-
-  #############################################
-  # Demo services : alpha, beta, gamma, omega #
-  #############################################
-
-  alpha:
-    container_name: alpha
-    image: timpamungkas/api-management-alpha:3.0.0
-    restart: unless-stopped
-    networks:
-      - kong-net
-    ports:
-      - "9001:9001"
-    depends_on:
-      - kong
-      
-  beta:
-    container_name: beta
-    image: timpamungkas/api-management-beta:3.0.0
-    restart: unless-stopped
-    networks:
-      - kong-net
-    ports:
-      - "9002:9002"
-    depends_on:
-      - kong
-      
-  gamma:
-    container_name: gamma
-    image: timpamungkas/api-management-gamma:3.0.0
-    restart: unless-stopped
-    networks:
-      - kong-net
-    ports:
-      - "9003:9003"
-    depends_on:
-      - kong
-
-  omega:
-    image: timpamungkas/api-management-omega:3.0.0
-    container_name: omega
-    restart: unless-stopped
-    networks:
-      - kong-net
-    ports:
-      - "9004:9004"
-    depends_on:
-      - kong
