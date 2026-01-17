@@ -137,6 +137,7 @@ secrets:
 
 volumes:
   kong-db-data:
+  kong_data:
 
 networks:
   kong-net:
