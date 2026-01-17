@@ -103,7 +103,7 @@ services:
         condition: on-failure
 
   kong-database:
-    image: postgres:16-alpine
+    image: postgres:9.5
     environment:
       POSTGRES_DB: ${KONG_PG_DATABASE:-kong}
       POSTGRES_USER: ${KONG_PG_USER:-kong}
