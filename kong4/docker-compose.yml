@@ -1,0 +1,81 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: kong-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    volumes:
+      - kong-db-data:/var/lib/postgresql/data
+
+  kong-migrations:
+    image: kong:latest
+    container_name: kong-migrations
+    depends_on:
+      - postgres
+    environment:
+      KONG_DATABASE: ${KONG_DATABASE}
+      KONG_PG_HOST: ${KONG_PG_HOST}
+      KONG_PG_USER: ${KONG_PG_USER}
+      KONG_PG_PASSWORD: ${KONG_PG_PASSWORD}
+      KONG_PG_DATABASE: ${KONG_PG_DATABASE}
+    command: kong migrations bootstrap
+    restart: on-failure
+
+  kong:
+    image: kong:latest
+    container_name: kong
+    depends_on:
+      - postgres
+      - kong-migrations
+    restart: always
+    environment:
+      KONG_DATABASE: ${KONG_DATABASE}
+      KONG_PG_HOST: ${KONG_PG_HOST}
+      KONG_PG_USER: ${KONG_PG_USER}
+      KONG_PG_PASSWORD: ${KONG_PG_PASSWORD}
+      KONG_PG_DATABASE: ${KONG_PG_DATABASE}
+
+      KONG_PROXY_ACCESS_LOG: /dev/stdout
+      KONG_ADMIN_ACCESS_LOG: /dev/stdout
+      KONG_PROXY_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_ERROR_LOG: /dev/stderr
+
+      KONG_ADMIN_LISTEN: ${KONG_ADMIN_LISTEN}
+      KONG_ADMIN_GUI_LISTEN: ${KONG_ADMIN_GUI_LISTEN}
+    ports:
+      - "${KONG_PROXY_PORT}:8000"
+      - "${KONG_PROXY_SSL_PORT}:8443"
+      - "${KONG_ADMIN_API_PORT}:8001"
+      - "${KONG_ADMIN_API_SSL_PORT}:8444"
+      - "${KONG_ADMIN_GUI_PORT}:8002"
+
+  konga:
+    image: pantsel/konga:0.14.9
+    container_name: konga
+    depends_on:
+      - kong
+    restart: always
+    environment:
+      NODE_ENV: ${NODE_ENV}
+      DB_ADAPTER: postgres
+      DB_HOST: postgres
+      DB_PORT: ${POSTGRES_PORT}
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_DATABASE: ${POSTGRES_DB}
+      KONGA_HOOK_TIMEOUT: 120000
+    ports:
+      - "${KONGA_PORT}:1337"
+    command: >
+      sh -c "node ./bin/konga.js prepare &&
+             node ./bin/konga.js start"
+
+volumes:
+  kong-db-data:
