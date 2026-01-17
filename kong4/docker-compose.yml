@@ -79,43 +79,51 @@ services:
     networks:
       - kong-net
 
-
-  # =========================
-  # KONGA PREPARE (ONE-TIME)
-  # =========================
-  konga-prepare:
-    container_name: konga_prepare
-    image: pantsel/konga:0.14.9
-    command: ["node", "./bin/konga.js", "prepare"]
-    environment:
-      DB_ADAPTER: postgres
-      DB_URI: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-      NODE_ENV: production
-    depends_on:
-      - postgres
-    restart: "no"
+  # Database PostgreSQL untuk Konga
+  konga-database:
+    image: postgres:13
+    restart: always
     networks:
       - kong-net
+    environment:
+      POSTGRES_USER: konga
+      POSTGRES_PASSWORD: konga
+      POSTGRES_DB: konga
 
-  # =========================
-  # KONGA APP
-  # =========================
-  konga:
-    container_name: konga
-    image: pantsel/konga:0.14.9
-    command: ["node", "./bin/konga.js", "start"]
-    restart: always
+  # Konga prepare: inisialisasi skema DB Konga
+  konga-prepare:
+    image: pantsel/konga:latest
+    command: "-c prepare -a postgres -u postgresql://konga:konga@konga-database:5432/konga"
+    networks:
+      - kong-net
     environment:
       DB_ADAPTER: postgres
-      DB_URI: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-      NODE_ENV: production
-      TOKEN_SECRET: km1GUr4RkcQD7DewhJPNXrCuZwcKmqjb
+      DB_HOST: konga-database
+      DB_USER: konga
+      DB_PASSWORD: konga
     depends_on:
-      - konga-prepare
+      - konga-database
+    restart: on-failure
+
+  # Service Konga (UI)
+  konga:
+    image: pantsel/konga:latest
+    restart: always
+    networks:
+      - kong-net
+    environment:
+      DB_ADAPTER: postgres
+      DB_HOST: konga-database
+      DB_USER: konga
+      DB_PASSWORD: konga
+      DB_DATABASE: konga
+      TOKEN_SECRET: mysecret
+      NODE_ENV: production
+    depends_on:
+      - konga-database
+      - kong
     ports:
       - "1337:1337"
-    networks:
-      - kong-net
 
 volumes:
   kong-db-data:

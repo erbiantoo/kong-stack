@@ -6,6 +6,6 @@ A script for simple install Kong API Gateway with Docker Compose.
 ```bash
   cd kong3
   docker-compose up -d --build
-  docker-compose down
+  docker-compose down -v
   docker-compose ps
 ```
