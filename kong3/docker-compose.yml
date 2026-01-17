@@ -30,13 +30,13 @@ services:
   kong-migrations:
     image: "${KONG_DOCKER_TAG:-kong:latest}"
     command: kong migrations bootstrap
+    depends_on:
+      - kong-database
     environment:
       <<: *kong-env
     networks:
       - kong-net
     restart: on-failure
-    depends_on:
-      - kong-database
     deploy:
       restart_policy:
         condition: on-failure
@@ -44,20 +44,23 @@ services:
   kong-migrations-up:
     image: "${KONG_DOCKER_TAG:-kong:latest}"
     command: kong migrations up && kong migrations finish
+    depends_on:
+      - kong-database
     environment:
       <<: *kong-env
     networks:
       - kong-net
     restart: on-failure
-    depends_on:
-      - kong-database
     deploy:
       restart_policy:
         condition: on-failure
         
   kong:
+    container_name: kong
     image: "${KONG_DOCKER_TAG:-kong:latest}"
     user: "${KONG_USER:-kong}"
+    depends_on:
+      - kong-database
     environment:
       <<: *kong-env
       KONG_ADMIN_ACCESS_LOG: /dev/stdout
@@ -72,22 +75,24 @@ services:
     networks:
       - kong-net
     ports:
-      - "${KONG_INBOUND_PROXY_LISTEN:-0.0.0.0}:8000:8000/tcp"
-      - "127.0.0.1:8001:8001/tcp"
+      - "8000:8000/tcp"
+      - "8001:8001/tcp"
+      - "8443:8443/tcp"
       - "127.0.0.1:8444:8444/tcp"
-      - "127.0.0.1:8002:8002/tcp"
     healthcheck:
       test: [ "CMD", "kong", "health" ]
       interval: 10s
       timeout: 10s
       retries: 10
     restart: on-failure:5
-    read_only: true
     volumes:
       - kong_prefix_vol:${KONG_PREFIX:-/var/run/kong}
       - kong_tmp_vol:/tmp
     security_opt:
       - no-new-privileges
+    deploy:
+      restart_policy:
+        condition: on-failure
 
   kong-database:
     image: postgres:16-alpine
@@ -108,7 +113,10 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-    restart: unless-stopped
+    restart: on-failure
+    deploy:
+      restart_policy:
+        condition: on-failure
     stdin_open: true
     tty: true
     networks:
