@@ -22,8 +22,6 @@ services:
         KONG_PG_HOST: kong-database
         KONG_PG_USER: ${KONG_PG_USER:-kong}
         KONG_PG_PASSWORD: mykongpassword
-    secrets:
-      - kong_postgres_password
     networks:
       - kong-net
     restart: on-failure
@@ -42,8 +40,6 @@ services:
         KONG_PG_HOST: kong-database
         KONG_PG_USER: ${KONG_PG_USER:-kong}
         KONG_PG_PASSWORD: mykongpassword
-    secrets:
-      - kong_postgres_password
     networks:
       - kong-net
     restart: on-failure
@@ -73,8 +69,6 @@ services:
         KONG_PROXY_ERROR_LOG: /dev/stderr
         KONG_PREFIX: ${KONG_PREFIX:-/var/run/kong}
         KONG_TRACING_INSTRUMENTATIONS: "request"
-    secrets:
-      - kong_postgres_password
     networks:
       - kong-net
     ports:
