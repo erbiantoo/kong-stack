@@ -15,7 +15,7 @@ const products = [
 // GET all products
 app.get("/api/products", (req, res) => {
   res.json({
-    message: "from backend product 1",
+    message: "from backend product 2",
     items: products,
   });
 });
