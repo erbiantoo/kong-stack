@@ -131,6 +131,54 @@ services:
     ports:
       - "1337:1337"
 
+    
+  #############################################
+  # Demo services : alpha, beta, gamma, omega #
+  #############################################
+  alpha:
+    container_name: alpha
+    image: timpamungkas/api-management-alpha:3.0.0
+    restart: unless-stopped
+    networks:
+        - kong-net
+    ports:
+      - "9001:9001"
+    depends_on:
+      - kong
+      
+  beta:
+    container_name: beta
+    image: timpamungkas/api-management-beta:3.0.0
+    restart: unless-stopped
+    networks:
+        - kong-net
+    ports:
+      - "9002:9002"
+    depends_on:
+      - kong
+      
+  gamma:
+    container_name: gamma
+    image: timpamungkas/api-management-gamma:3.0.0
+    restart: unless-stopped
+    networks:
+        - kong-net
+    ports:
+      - "9003:9003"
+    depends_on:
+      - kong
+
+  omega:
+    image: timpamungkas/api-management-omega:3.0.0
+    container_name: omega
+    restart: unless-stopped
+    networks:
+        - kong-net
+    ports:
+      - "9004:9004"
+    depends_on:
+      - kong
+
 secrets:
   kong_postgres_password:
     file: ./POSTGRES_PASSWORD
